@@ -1,0 +1,29 @@
+Memórias Internas (RAM/ROM):
+    bios: 16 KB de código inicial do console.
+    ewram: 256 KB de memória RAM de trabalho externa.
+    iwram: 32 KB de memória RAM ultrarrápida da CPU.
+    pram: 1 KB que armazena a paleta de cores (512 cores de 16 bits).
+    vram: 96 KB onde ficam os blocos gráficos (tiles) e mapas de fundo.
+    oam: 1 KB para a lista de atributos de sprites (posição X/Y, tamanho de personagens).
+    *rom: Conteúdo do jogo carregado do cartucho.
+    sram: Memória de salvamento do cartucho.
+
+ao em vez de fixar o tamanho maximo dentro da struct, declaramos uint8_t *rom; (um ponteiro) deixamos #define ROM_MAX_SIZE
+no cabecalho apenas como uma trava de seguranca, quando formos ler o arquivo .gba do disco checamos "esse arquivo tem mais
+de 32MB? se sim, rejeite, pois cartuchos de GBA reais nunca passam disso"
+
+RAM (Static RAM): É o chip de memória de salvamento dentro do cartucho do GBA, alimentado por bateria
+(ou chip Flash/EEPROM). É onde o jogo salva o seu progresso no jogo (Slot 1, Slot 2).
+Tem 64 KB (65.536 bytes, pois 64 x 1024 = 65.536)
+
+O barramento de endereços do processador ARM7TDMI do GBA é de 32 bits. Isso significa que qualquer endereço no console — 
+seja para ler 1 byte, 2 bytes ou 4 bytes — é sempre um número de 32 bits (uint32_t addr)
+
+A seta -> é o operador de acesso a membros através de um ponteiro. Ela não passa condições; ela literalmente significa: "siga o ponteiro e pegue o campo lá dentro".
+
+    Quando você tem uma struct comum: mmu.ewram (usa o ponto .).
+
+    Quando você tem um ponteiro para uma struct (MMU *mmu): o C exige que você escreva mmu->ewram.
+
+Escrever mmu->ewram é apenas um atalho mais limpo para (*mmu).ewram (desreferenciar o endereço e pegar o array interno).
+
