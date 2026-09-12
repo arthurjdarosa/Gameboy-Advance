@@ -16,12 +16,12 @@ void mmu_free(MMU *mmu) {
     }
 }
 
-uint8_t mmu_read8(MMU *mmu, uint32 addr) {
+uint8_t mmu_read8(MMU *mmu, uint32_t addr) {
     uint8_t region = (uint8_t)(addr >> 24);
 
     switch (region) {
         case 0x00: // BIOS (0x00000000 - 0x00003FFF)
-            if (addr < BIOS_SIZE) return mmu->bios(addr); // se o endereco estiver dentro do limite de 16 kb le e devolve o byte do array mmu->bios
+            if (addr < BIOS_SIZE) return mmu->bios[addr]; // se o endereco estiver dentro do limite de 16 kb le e devolve o byte do array mmu->bios
             break;
 
         case 0x02: // EWRAM (espelhada a cada 256 KB ate 0x02FFFFFF)
@@ -31,15 +31,15 @@ uint8_t mmu_read8(MMU *mmu, uint32 addr) {
             return mmu->iwram[addr & (IWRAM_SIZE - 1)];
 
         case 0x04: // IO Registers
-            if ((addr - 0x040000000) < IOREG_SIZE) {
-                return mmu->io[addr - 0x04000000]
+            if ((addr - 0x04000000) < IOREG_SIZE) {
+                return mmu->io[addr - 0x04000000];
             }
             break;
         
-        case 05: // PRAM (Palettes - 1 KB espelhado)
+        case 0x05: // PRAM (Palettes - 1 KB espelhado)
             return mmu->pram[addr & (PRAM_SIZE - 1)]; // le da paleta de cores (tamanho PRAM_SIZE do mmu.h) aplicando espelhamento automatico
         
-        case 06: // VRAM (96 KB)
+        case 0x06: // VRAM (96 KB)
             // A VRAM tem um mirroring especial (64KB + 32 KB espelhado)
             {
                 uint32_t offset = addr & 0x01FFFF;
@@ -64,7 +64,7 @@ uint8_t mmu_read8(MMU *mmu, uint32 addr) {
                 uint32_t offset = addr & 0x01FFFFFF; // isola os 25 bits inferiores (o cartucho suporta no maximo 32 MB)
                 if (mmu->rom && offset < mmu->rom_size) { // verifica se existe um cartucho alacodo (mmu->rom)
                     // e se o indice pedido existe no arquivo offset < mmu->rom_size. Se sim entrega o byte da ROM
-                    return mmu->rom[offsett];
+                    return mmu->rom[offset];
                 }
             }
             break;
@@ -92,7 +92,7 @@ uint16_t mmu_read16(MMU *mmu, uint32_t addr) {
 uint32_t mmu_read32(MMU *mmu, uint32_t addr) {
     // Alinhamento forçado a 32 bits
     addr &= ~3; // forca o alinhamentyo em multiplos de 4 limpando os dois ultimos bits (bits 0 e 1)
-    return (uint32_t)(mmu_read16(mmu, addr) | (mmu_read16(mmu, addr + 2) << 16)); 
+    return (uint32_t)(mmu_read16(mmu, addr) | ((uint32_t)mmu_read16(mmu, addr + 2) << 16)); 
     // le dois blocos de 16 bits usando mmu_read16 e monta o vlaor final de 32 bits descloanco o segundo bloco por 16 posicoes (<<16)
 }
 
@@ -106,11 +106,11 @@ void mmu_write8(MMU *mmu, uint32_t addr, uint8_t val){
         
         case 0x03: // IWRAM
             mmu->iwram[addr & (IWRAM_SIZE - 1)] = val;
-            breake;
+            break;
         
         case 0x04: // IO Registers
             if ((addr - 0x04000000) < IOREG_SIZE) {
-                mmu->io(addr - 0x04000000) = val;
+                mmu->io[addr - 0x04000000] = val;
             }
             break;
         
@@ -118,19 +118,19 @@ void mmu_write8(MMU *mmu, uint32_t addr, uint8_t val){
             mmu->pram[addr & (PRAM_SIZE - 1)] = val;
             break;
 
-        case 0x06; // VRAM
+        case 0x06: // VRAM
             {
                 uint32_t offset = addr & 0x1FFFF;
-                if (offset >= VRAM_SIZE) offset -= 0x80000;
+                if (offset >= VRAM_SIZE) offset -= 0x8000;
                 mmu->vram[offset] = val;
             }
             break;
 
-        case 0x07; // OAM
+        case 0x07: // OAM
             mmu->oam[addr & (OAM_SIZE - 1)] = val;
             break;
         
-        case0x0E: // SRAM
+        case 0x0E: // SRAM
             mmu->sram[addr & (SRAM_SIZE - 1)] = val;
             break;
 
@@ -143,13 +143,13 @@ void mmu_write8(MMU *mmu, uint32_t addr, uint8_t val){
 void mmu_write16(MMU *mmu, uint32_t addr, uint16_t val) {
     addr &= ~1;
     mmu_write8(mmu, addr, (uint8_t)(val & 0xFF));
-    mmu_write8(mmu, addr + 1, (uint8_t)(val & 0xFF));
+    mmu_write8(mmu, addr + 1, (uint8_t)((val >> 8) & 0xFF));
     // divide o valor de 16 bits em dois pedacoes de 8 bits (val & 0xFF) pega a parte baixa, val >> 8 pega a parte alta e grava em sequencia
 }
 
 void mmu_write32(MMU *mmu, uint32_t addr, uint32_t val) {
-    addr &= ~1;
-    mmu_write16(mmu, addr, (uint16_t)(val & 0xFF));
-    mmu_write16(mmu, addr + 1, (uint16_t)(val & 0xFF));
+    addr &= ~3;
+    mmu_write16(mmu, addr, (uint16_t)(val & 0xFFFF));
+    mmu_write16(mmu, addr + 2, (uint16_t)((val >> 16) & 0xFFFF));
     // divide a palavra de 32 bits em duas metades de 16 bits e grava em sequencia com chamadas a mmu_write16.
 }
