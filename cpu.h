@@ -49,6 +49,6 @@ void cpu_reset(CPU *cpu);
 
 // helpers para leitura e alteração de flags do CPSR
 bool cpu_get_flag(CPU *cpu, uint32_t flag);
-bool cpu_get_flag(CPU *cpu, uint32_t flag, bool value);
+void cpu_set_flag(CPU *cpu, uint32_t flag, bool value);
 
 #endif
