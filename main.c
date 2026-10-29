@@ -72,6 +72,11 @@ int main(void) {
     printf("5. Leitura via ponteiro cpu.mmu: 0x%08X (Esperado: 0xCAFEBABE)\n", val);
     assert(val == 0xCAFEBABE);
 
+    // 7.Teste do Ciclo Fetch (Avanço do PC no modo ARM)
+    mmu_write32(cpu.mmu, 0x03000000, 0xE1A00000);
+
+
+    
     mmu_free(&mmu);
     printf("\nTodos os testes passaram! CPU + MMU\n");
     return 0;

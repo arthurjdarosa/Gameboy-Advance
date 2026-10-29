@@ -51,4 +51,6 @@ void cpu_reset(CPU *cpu);
 bool cpu_get_flag(CPU *cpu, uint32_t flag);
 void cpu_set_flag(CPU *cpu, uint32_t flag, bool value);
 
+int cpu_step(CPU *cpu);
+
 #endif
